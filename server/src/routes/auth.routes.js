@@ -14,6 +14,7 @@ import {
 } from '../utils/validate.js';
 import {
   clearAuthCookie,
+  optionalAuth,
   requireAuth,
   setAuthCookie,
 } from '../middleware/auth.js';
@@ -103,6 +104,15 @@ router.post('/logout', (req, res) => {
   clearAuthCookie(req, res);
   res.json({ message: 'Signed out.' });
 });
+
+router.get(
+  '/session',
+  optionalAuth,
+  asyncHandler(async (req, res) => {
+    if (!req.user) return res.json({ user: null });
+    res.json(authPayload(req.user));
+  }),
+);
 
 router.get('/me', requireAuth, asyncHandler(async (req, res) => {
   res.json(authPayload(req.user));

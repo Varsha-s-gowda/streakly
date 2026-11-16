@@ -34,29 +34,43 @@ export function clearAuthCookie(req, res) {
   });
 }
 
-export const requireAuth = asyncHandler(async (req, res, next) => {
+async function userFromRequest(req) {
   let token = req.cookies?.[AUTH_COOKIE];
   if (!token) {
     const header = req.headers.authorization || '';
     if (header.startsWith('Bearer ')) token = header.slice(7);
   }
 
-  if (!token) {
-    throw new HttpError(401, 'Please sign in to continue.');
-  }
+  if (!token) return { hasToken: false, user: null };
 
-  let payload;
   try {
-    payload = jwt.verify(token, env.jwtSecret);
+    const payload = jwt.verify(token, env.jwtSecret);
+    const user = await User.findById(payload.sub);
+    return { hasToken: true, user };
   } catch {
-    throw new HttpError(401, 'Your session has expired. Please sign in again.');
+    return { hasToken: true, user: null };
   }
+}
 
-  const user = await User.findById(payload.sub);
+export const requireAuth = asyncHandler(async (req, res, next) => {
+  const { hasToken, user } = await userFromRequest(req);
   if (!user) {
-    throw new HttpError(401, 'Account not found. Please sign in again.');
+    throw new HttpError(
+      401,
+      hasToken ? 'Your session has expired. Please sign in again.' : 'Please sign in to continue.',
+    );
   }
 
   req.user = user;
+  next();
+});
+
+/**
+ * Resolves the session when present, but never rejects the request.
+ * Used by the public session endpoint so signed-out visitors load cleanly.
+ */
+export const optionalAuth = asyncHandler(async (req, res, next) => {
+  const { user } = await userFromRequest(req);
+  if (user) req.user = user;
   next();
 });
