@@ -1,0 +1,22 @@
+{
+  "name": "streakly",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Streakly — a personal daily routine, habit, interview prep and journaling tracker.",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c green,cyan \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w client",
+    "start": "npm run start -w server",
+    "smoke": "node server/scripts/smoke-test.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
